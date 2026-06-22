@@ -1,0 +1,36 @@
+name: Sanity Check
+
+# Lightweight CI: confirms the codebase installs cleanly and every module
+# imports without error. It does NOT call the live football-data.org API
+# (no secret is configured here), so it always exercises the dummy-data
+# fallback paths in src/scraper.py — which is exactly what should happen
+# in an environment without an API token.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sanity-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile all modules
+        run: python -m py_compile src/*.py predict_matchday.py update_and_evaluate.py
+
+      - name: Import smoke test
+        run: |
+          python -c "
+          from src import scraper, features, model, visualize
+          print('All modules imported successfully.')
+          "
